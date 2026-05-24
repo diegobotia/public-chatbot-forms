@@ -111,17 +111,6 @@ src/
   types/
 ```
 
-## Despliegue en Vercel
-
-1. Sube el repositorio a GitHub.
-2. Importa el proyecto en Vercel.
-3. Configura variables de entorno en Vercel:
-   - `NEXT_PUBLIC_API_BASE_URL`
-   - `NEXT_PUBLIC_USE_MOCKS`
-4. Deploy.
-
-No requiere configuración adicional especial.
-
 ## Scripts
 
 - `npm run dev`: desarrollo
