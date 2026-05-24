@@ -106,7 +106,7 @@ export const PqrsForm = () => {
         </FormField>
 
         <FormField label="Teléfono (opcional)" error={errors.telefono?.message}>
-          <Input placeholder="3001234567" {...register('telefono')} />
+          <Input placeholder="Ingresa tu teléfono" {...register('telefono')} />
         </FormField>
 
         <div className="md:col-span-2">

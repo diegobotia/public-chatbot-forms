@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import Link from 'next/link'
+import Image from 'next/image'
 
 interface PublicFormLayoutProps {
   title: string
@@ -15,12 +15,16 @@ export const PublicFormLayout = ({
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <Link
-          href="/"
-          className="mb-6 inline-block text-sm text-sky-700 transition hover:text-sky-800"
-        >
-          Volver al inicio
-        </Link>
+        <div className="mb-6 flex justify-center">
+          <Image
+            src="/LOGO.svg"
+            alt="Logo IPS Centir"
+            width={220}
+            height={220}
+            priority
+            className="h-auto w-32 sm:w-40 md:w-44"
+          />
+        </div>
         <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
         <p className="mt-2 text-sm text-slate-600">{description}</p>
         <div className="mt-6">{children}</div>

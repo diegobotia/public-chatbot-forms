@@ -132,7 +132,7 @@ export const PatientRegistrationForm = () => {
 
         <FormField label="Teléfono" error={errors.telefono?.message}>
           <Input
-            placeholder="3001234567"
+            placeholder="Ingresa tu teléfono"
             hasError={!!errors.telefono}
             {...register('telefono')}
           />
