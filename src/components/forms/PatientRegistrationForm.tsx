@@ -1,10 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ApiRequestError } from '@/types/api'
-import { PatientRegistrationResponse } from '@/types/patient'
+import {
+  PatientCatalogOptionDTO,
+  PatientDocumentTypeOptionDTO,
+  PatientRegistrationResponse,
+} from '@/types/patient'
 import { getPatientService } from '@/services/patients/patientServiceFactory'
 import { patientRegistrationSchema } from '@/lib/validations/patientRegistrationSchema'
 import type { PatientRegistrationFormValues } from '@/lib/validations/patientRegistrationSchema'
@@ -50,6 +54,19 @@ const initialValues: PatientRegistrationFormValues = {
 export const PatientRegistrationForm = () => {
   const patientService = getPatientService()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [catalogsError, setCatalogsError] = useState<string | null>(null)
+  const [isLoadingCatalogs, setIsLoadingCatalogs] = useState(true)
+  const [catalogs, setCatalogs] = useState<{
+    documentTypes: PatientDocumentTypeOptionDTO[]
+    genders: PatientCatalogOptionDTO[]
+    civilStatus: PatientCatalogOptionDTO[]
+    occupations: PatientCatalogOptionDTO[]
+    bloodGroups: PatientCatalogOptionDTO[]
+    schoolingLevels: PatientCatalogOptionDTO[]
+    countries: PatientCatalogOptionDTO[]
+    municipalities: PatientCatalogOptionDTO[]
+    territorialZones: PatientCatalogOptionDTO[]
+  } | null>(null)
   const [successResponse, setSuccessResponse] =
     useState<PatientRegistrationResponse | null>(null)
 
@@ -58,20 +75,227 @@ export const PatientRegistrationForm = () => {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    getValues,
+    setValue,
   } = useForm<PatientRegistrationFormValues>({
     resolver: zodResolver(patientRegistrationSchema),
     defaultValues: initialValues,
   })
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadCatalogs = async () => {
+      try {
+        const config = await patientService.getFormConfig()
+        if (!isMounted) {
+          return
+        }
+
+        setCatalogs({
+          documentTypes: config.supportedDocumentTypes,
+          genders: config.genders,
+          civilStatus: config.civilStatus,
+          occupations: config.occupations,
+          bloodGroups: config.bloodGroups,
+          schoolingLevels: config.schoolingLevels,
+          countries: config.countries,
+          municipalities: config.municipalities,
+          territorialZones: config.territorialZones,
+        })
+
+        const currentCountryId = getValues('idPaisOrigen')
+        const hasCurrentCountry = config.countries.some(
+          (country) => country.id === currentCountryId,
+        )
+        if (!hasCurrentCountry) {
+          const countryByName = config.countries.find(
+            (country) => country.label.trim().toLowerCase() === 'colombia',
+          )
+          const fallbackCountryId = countryByName?.id ?? config.countries[0]?.id
+          if (fallbackCountryId) {
+            setValue('idPaisOrigen', fallbackCountryId)
+          }
+        }
+      } catch {
+        if (!isMounted) {
+          return
+        }
+        setCatalogsError(
+          'No fue posible cargar catálogos actualizados. Se usarán opciones de respaldo.',
+        )
+      } finally {
+        if (isMounted) {
+          setIsLoadingCatalogs(false)
+        }
+      }
+    }
+
+    loadCatalogs()
+
+    return () => {
+      isMounted = false
+    }
+  }, [getValues, patientService, setValue])
+
+  const resolveCatalogId = (
+    selectedValue: string,
+    options: PatientCatalogOptionDTO[],
+  ): string => {
+    const normalizedSelectedValue = selectedValue.trim().toLowerCase()
+    const byId = options.find((option) => option.id === selectedValue)
+    if (byId) {
+      return byId.id
+    }
+
+    const byLabel = options.find(
+      (option) => option.label.trim().toLowerCase() === normalizedSelectedValue,
+    )
+    return byLabel?.id ?? selectedValue
+  }
+
+  const resolveDocumentCode = (
+    selectedValue: string,
+    options: PatientDocumentTypeOptionDTO[],
+  ): string => {
+    const normalizedSelectedValue = selectedValue.trim().toLowerCase()
+    const byCode = options.find((option) => option.codigo === selectedValue)
+    if (byCode) {
+      return byCode.codigo
+    }
+
+    const byDescription = options.find(
+      (option) =>
+        option.descripcion.trim().toLowerCase() === normalizedSelectedValue,
+    )
+    return byDescription?.codigo ?? selectedValue
+  }
+
+  const documentTypeOptionsForForm =
+    catalogs?.documentTypes.map((option) => ({
+      value: option.codigo,
+      label: option.descripcion,
+    })) ?? documentTypeOptions
+  const genderOptionsForForm =
+    catalogs?.genders.map((option) => ({ value: option.id, label: option.label })) ??
+    genderOptions
+  const maritalStatusOptionsForForm =
+    catalogs?.civilStatus.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? maritalStatusOptions
+  const occupationOptionsForForm =
+    catalogs?.occupations.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? occupationOptions
+  const bloodTypeOptionsForForm =
+    catalogs?.bloodGroups.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? bloodTypeOptions
+  const educationLevelOptionsForForm =
+    catalogs?.schoolingLevels.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? educationLevelOptions
+  const countryOptionsForForm =
+    catalogs?.countries.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? countryOptions.map((option) => ({ value: String(option.value), label: option.label }))
+  const municipalityOptionsForForm =
+    catalogs?.municipalities.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? municipalityOptions
+  const territorialZoneOptionsForForm =
+    catalogs?.territorialZones.map((option) => ({
+      value: option.id,
+      label: option.label,
+    })) ?? territorialZoneOptions
+  const successDocumentTypeLabel = successResponse
+    ? (documentTypeOptionsForForm.find(
+        (option) => option.value === successResponse.codTipoIdentificacion,
+      )?.label ?? successResponse.codTipoIdentificacion)
+    : null
 
   const onSubmit = async (values: PatientRegistrationFormValues) => {
     setServerError(null)
     setSuccessResponse(null)
 
     try {
+      const catalogData = catalogs ?? {
+        documentTypes: documentTypeOptionsForForm.map((option) => ({
+          codigo: option.value,
+          descripcion: option.label,
+        })),
+        genders: genderOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        civilStatus: maritalStatusOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        occupations: occupationOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        bloodGroups: bloodTypeOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        schoolingLevels: educationLevelOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        countries: countryOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        municipalities: municipalityOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+        territorialZones: territorialZoneOptionsForForm.map((option) => ({
+          id: option.value,
+          label: option.label,
+        })),
+      }
+
       const payload = {
         ...values,
+        codTipoIdentificacion: resolveDocumentCode(
+          values.codTipoIdentificacion,
+          catalogData.documentTypes,
+        ),
+        idGenero: resolveCatalogId(values.idGenero, catalogData.genders),
+        idEstadoCivil: resolveCatalogId(
+          values.idEstadoCivil,
+          catalogData.civilStatus,
+        ),
+        idOcupacion: resolveCatalogId(values.idOcupacion, catalogData.occupations),
+        idGrupoSanguineo: resolveCatalogId(
+          values.idGrupoSanguineo,
+          catalogData.bloodGroups,
+        ),
+        idEscolaridad: resolveCatalogId(
+          values.idEscolaridad,
+          catalogData.schoolingLevels,
+        ),
         estrato: Number(values.estrato),
-        idPaisOrigen: Number(values.idPaisOrigen),
+        idPaisOrigen: Number(
+          resolveCatalogId(values.idPaisOrigen, catalogData.countries),
+        ),
+        codMunicipio: resolveCatalogId(
+          values.codMunicipio,
+          catalogData.municipalities,
+        ),
+        codZonaTerritorial: resolveCatalogId(
+          values.codZonaTerritorial,
+          catalogData.territorialZones,
+        ),
       }
       const response = await patientService.registerPatient(payload)
       setSuccessResponse(response)
@@ -91,17 +315,20 @@ export const PatientRegistrationForm = () => {
         <LoadingState message="Estamos enviando tu registro, por favor espera..." />
       ) : null}
 
-      {successResponse ? (
-        <SuccessState
-          title="Registro completado"
-          description={`${successResponse.message}. Documento: ${successResponse.codTipoIdentificacion}-${successResponse.numIdentificacion}.`}
-        />
-      ) : null}
-
       {serverError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {serverError}
         </div>
+      ) : null}
+
+      {catalogsError ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+          {catalogsError}
+        </div>
+      ) : null}
+
+      {isLoadingCatalogs ? (
+        <LoadingState message="Cargando catálogos del formulario..." />
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -147,7 +374,7 @@ export const PatientRegistrationForm = () => {
             {...register('codTipoIdentificacion')}
           >
             <option value="">Selecciona una opción</option>
-            {documentTypeOptions.map((option) => (
+            {documentTypeOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -180,7 +407,7 @@ export const PatientRegistrationForm = () => {
         <FormField label="Género" error={errors.idGenero?.message}>
           <Select hasError={!!errors.idGenero} {...register('idGenero')}>
             <option value="">Selecciona una opción</option>
-            {genderOptions.map((option) => (
+            {genderOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -191,7 +418,7 @@ export const PatientRegistrationForm = () => {
         <FormField label="Estado civil" error={errors.idEstadoCivil?.message}>
           <Select hasError={!!errors.idEstadoCivil} {...register('idEstadoCivil')}>
             <option value="">Selecciona una opción</option>
-            {maritalStatusOptions.map((option) => (
+            {maritalStatusOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -202,7 +429,7 @@ export const PatientRegistrationForm = () => {
         <FormField label="Ocupación" error={errors.idOcupacion?.message}>
           <Select hasError={!!errors.idOcupacion} {...register('idOcupacion')}>
             <option value="">Selecciona una opción</option>
-            {occupationOptions.map((option) => (
+            {occupationOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -219,7 +446,7 @@ export const PatientRegistrationForm = () => {
             {...register('idGrupoSanguineo')}
           >
             <option value="">Selecciona una opción</option>
-            {bloodTypeOptions.map((option) => (
+            {bloodTypeOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -230,7 +457,7 @@ export const PatientRegistrationForm = () => {
         <FormField label="Escolaridad" error={errors.idEscolaridad?.message}>
           <Select hasError={!!errors.idEscolaridad} {...register('idEscolaridad')}>
             <option value="">Selecciona una opción</option>
-            {educationLevelOptions.map((option) => (
+            {educationLevelOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -251,8 +478,8 @@ export const PatientRegistrationForm = () => {
         <FormField label="País de origen" error={errors.idPaisOrigen?.message}>
           <Select hasError={!!errors.idPaisOrigen} {...register('idPaisOrigen')}>
             <option value="">Selecciona una opción</option>
-            {countryOptions.map((option) => (
-              <option key={option.value} value={String(option.value)}>
+            {countryOptionsForForm.map((option) => (
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -262,7 +489,7 @@ export const PatientRegistrationForm = () => {
         <FormField label="Municipio" error={errors.codMunicipio?.message}>
           <Select hasError={!!errors.codMunicipio} {...register('codMunicipio')}>
             <option value="">Selecciona una opción</option>
-            {municipalityOptions.map((option) => (
+            {municipalityOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -279,7 +506,7 @@ export const PatientRegistrationForm = () => {
             {...register('codZonaTerritorial')}
           >
             <option value="">Selecciona una opción</option>
-            {territorialZoneOptions.map((option) => (
+            {territorialZoneOptionsForForm.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -322,6 +549,13 @@ export const PatientRegistrationForm = () => {
           Limpiar formulario
         </Button>
       </div>
+
+      {successResponse && successDocumentTypeLabel ? (
+        <SuccessState
+          title="Registro completado"
+          description={`${successResponse.message}. Documento: ${successDocumentTypeLabel}-${successResponse.numIdentificacion}.`}
+        />
+      ) : null}
     </form>
   )
 }

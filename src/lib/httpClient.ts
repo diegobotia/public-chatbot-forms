@@ -45,36 +45,45 @@ const extractErrorMessage = (payload: unknown): string => {
 }
 
 export const httpClient = {
-  async post<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
-    let response: Response
-    try {
-      response = await fetch(buildUrl(path), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-    } catch (error) {
-      throw new ApiRequestError(
-        'No fue posible conectar con el servidor. Verifica la URL del backend y la configuración de CORS.',
-        0,
-        error,
-      )
-    }
-
-    const data = await response
-      .json()
-      .catch(() => ({ message: 'Respuesta no válida del servidor.' }))
-
-    if (!response.ok) {
-      throw new ApiRequestError(
-        extractErrorMessage(data),
-        response.status,
-        data,
-      )
-    }
-
-    return data as TResponse
+  async get<TResponse>(path: string): Promise<TResponse> {
+    return request<TResponse>(path, {
+      method: 'GET',
+    })
   },
+
+  async post<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
+    return request<TResponse>(path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+  },
+}
+
+const request = async <TResponse>(
+  path: string,
+  init: RequestInit,
+): Promise<TResponse> => {
+  let response: Response
+  try {
+    response = await fetch(buildUrl(path), init)
+  } catch (error) {
+    throw new ApiRequestError(
+      'No fue posible conectar con el servidor. Verifica la URL del backend y la configuración de CORS.',
+      0,
+      error,
+    )
+  }
+
+  const data = await response
+    .json()
+    .catch(() => ({ message: 'Respuesta no válida del servidor.' }))
+
+  if (!response.ok) {
+    throw new ApiRequestError(extractErrorMessage(data), response.status, data)
+  }
+
+  return data as TResponse
 }
