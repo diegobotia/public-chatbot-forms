@@ -1,5 +1,6 @@
 export const apiConfig = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080',
+  // The browser should call same-origin routes; Next route handlers proxy to backend.
+  baseUrl: '',
   endpoints: {
     patientRegistration: '/api/v1/forms/patients',
     pqrs: '/api/v1/forms/pqrs',

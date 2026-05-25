@@ -29,12 +29,12 @@ export const maritalStatusOptions: CatalogOptionString[] = [
 ]
 
 export const bloodTypeOptions: CatalogOptionString[] = [
-  { value: '2044b9c3-29dc-48be-85fc-c885025b754a', label: 'A-' },
+  { value: '2044b9c3-29dc-48be-85fc-c885025b7549', label: 'A-' },
   { value: '243419db-6ad9-4b73-8af4-8f75abd929b7', label: 'B-' },
-  { value: '2edd5d3e-dcd5-4de8-96c6-5fe62873b22', label: 'B+' },
-  { value: '4464d3f7-65ea-4259-8e25-ae8972602ed0', label: 'O-' },
+  { value: '2edd5d3e-dcd5-4de8-96c6-5fe62873b22d', label: 'B+' },
+  { value: '4464d3f7-65ea-4259-8e25-ae8972602ed8', label: 'O-' },
   { value: '4d88082e-4c46-4898-b52b-3c75c1767f45', label: 'O+' },
-  { value: '54fd3203-c8e8-43bb-9a9e-ca206e05210', label: 'AB+' },
+  { value: '54fd3203-c8e8-43bb-9a9e-ca206e052103', label: 'AB+' },
   { value: 'e1788483-80ef-4faa-8cd7-b75edfeeb8b6', label: 'AB-' },
   { value: 'e4d0d2ef-921e-4e86-91a0-f9c0b006118b', label: 'A+' },
 ]

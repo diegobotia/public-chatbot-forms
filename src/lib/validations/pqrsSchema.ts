@@ -4,7 +4,7 @@ export const pqrsSchema = z.object({
   cedula: z
     .string()
     .min(1, 'El número de documento no puede estar vacío.')
-    .regex(/^[0-9.]{8,12}$/, 'Ingresa una cédula válida.'),
+    .regex(/^[0-9]{8,10}$/, 'La cédula debe tener entre 8 y 10 dígitos numéricos.'),
   tipo: z.enum(['PETICION', 'QUEJA', 'RECLAMO', 'SUGERENCIA'], {
     message: 'Este campo es obligatorio.',
   }),
