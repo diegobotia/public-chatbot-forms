@@ -1,4 +1,4 @@
-# Formularios públicos para chatbot (IPS)
+# Formularios públicos para chatbot (IPS).
 
 Proyecto frontend en Next.js para dos formularios públicos:
 
